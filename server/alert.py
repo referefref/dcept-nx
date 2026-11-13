@@ -17,11 +17,18 @@ import socket
 
 def sendAlert(message):
 
+	# Each channel is tried on its own, so that a failed e-mail does not stop the syslog alert
 	if config.smtp_host:
-		sendEmail(config.smtp_host, config.email_address, config.subject, message, config.smtp_port)
+		try:
+			sendEmail(config.smtp_host, config.email_address, config.subject, message, config.smtp_port)
+		except Exception as e:
+			logging.error("E-mail alert to %s:%s failed: %s" % (config.smtp_host, config.smtp_port, e))
 
 	if config.syslog_host:
-		sendSyslog(config.syslog_host, message, 1, 4, config.syslog_port)
+		try:
+			sendSyslog(config.syslog_host, message, 1, 4, config.syslog_port)
+		except Exception as e:
+			logging.error("Syslog alert to %s:%s failed: %s" % (config.syslog_host, config.syslog_port, e))
 
 
 def sendSNMP(host, message, port=162, version=2):

@@ -7,6 +7,7 @@ This is a Python 3 version of the DCEPT server components. The original runs onl
 - Cracking results are recognised when current John the Ripper pads its output line with spaces.
 - The cracker thread waits on its queue instead of polling it in a tight loop, and its temporary directory is removed when there are no passwords to test.
 - An undefined variable in the TShark crash handler is defined.
+- An error while cracking or sending an alert no longer ends the cracker thread (in the original, an unreachable SMTP server stopped all further detection until a restart), and a failed e-mail alert no longer prevents the syslog alert; such errors are logged.
 - New optional setting `capture_filter` (default `tcp port 88`, the original filter); `port 88` also captures Kerberos over UDP.
 - `server/Dockerfile` now builds on Debian 12 with Python 3, TShark 4.0 and a pinned John the Ripper jumbo commit (with colour output switched off so DCEPT can read it); `server/requirements.txt` pins the Python packages.
 

@@ -88,7 +88,11 @@ class Cracker:
 		while True:
 			# Block until a job arrives (the original polled the queue in a tight loop)
 			item = self.passwordQueue.get()
-			self.recoverPassword(item[0], item[1], item[2], item[3])
+			# Keep the thread alive if a job or an alert fails (an exception used to end it silently)
+			try:
+				self.recoverPassword(item[0], item[1], item[2], item[3])
+			except Exception:
+				logging.exception("Cracking or alerting job failed")
 
 # Singleton
 cracker = Cracker()
