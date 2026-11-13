@@ -1,12 +1,12 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 # DCEPT
 # James Bettke
 # Dell SecureWorks 2016
 
-from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
-from SocketServer import ThreadingMixIn
-import urlparse
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from socketserver import ThreadingMixIn
+import urllib.parse as urlparse
 import random
 from datetime import datetime
 import os
@@ -14,8 +14,6 @@ import sqlite3
 import threading
 import logging
 from ConfigReader import config
-import cgi
-import cgitb
 
 from Cracker import cracker
 import dcept
@@ -64,7 +62,7 @@ class GenerationServer:
 				 (date text, domain text, username text, machine text, password text)''')
 
 			# Add a test honeytoken to the database
-			c.execute("INSERT INTO logs VALUES (?,?,?,?,?)", (datetime.now(), "ALLSAFE.LAN", "Administrator", "FAKE-PC", "dcepttest"))
+			c.execute("INSERT INTO logs VALUES (?,?,?,?,?)", (str(datetime.now()), "ALLSAFE.LAN", "Administrator", "FAKE-PC", "dcepttest"))
 			self.conn.commit()
 		else:
 			self.conn = sqlite3.connect(self.sqlite_path, check_same_thread=False)
@@ -77,16 +75,16 @@ class GenerationServer:
 		while True:
 	 
 			# Create a random password using the above alphabet
-			for i in xrange(10):
+			for i in range(10):
 				password += alpha[random.randrange(len(alpha))]
 
-			print "Generated -",password
+			print("Generated -",password)
 
 			# Does this password already exist?
 			if self.findPass(password) == None:
 				break
 			else:
-				print "Password collision, regenerating..."
+				print("Password collision, regenerating...")
 
 		return password
 
@@ -140,19 +138,19 @@ class HttpHandler(BaseHTTPRequestHandler):
 			machine = qs[config.honeytoken_param_name][0]
 		except:
 			return
-		print "Request from IP: %s workstation: %s" % (s.client_address[0], machine)
+		print("Request from IP: %s workstation: %s" % (s.client_address[0], machine))
 
 		domain = config.domain 
 		username = config.honey_username
 
 		password = gsHandle.genPass()
 		jSONstring = "{'d':'%s','u':'%s',p:'%s'}" % (domain, username, password)
-		s.wfile.write(jSONstring)
-		print "Sent:"+jSONstring
+		s.wfile.write(jSONstring.encode('utf-8'))
+		print("Sent:"+jSONstring)
 
       # Log transaction
 		c = gsHandle.conn.cursor()
-		c.execute("INSERT INTO logs VALUES (?,?,?,?,?)", (datetime.now(), domain, username, machine, password))
+		c.execute("INSERT INTO logs VALUES (?,?,?,?,?)", (str(datetime.now()), domain, username, machine, password))
 		gsHandle.conn.commit()
 
 
@@ -161,7 +159,7 @@ class HttpHandler(BaseHTTPRequestHandler):
 	# u=Administrator&d=ALLSAFE.LAN&t=64118a956797600c6e1239f1cf9c8db4ae780f0a1d0bc8b3a0e12de736a14792f17cb58671e42813fbd522e22e021c5d6924b7b114064889
 	def do_POST(s):
 		length = int(s.headers['content-length'])
-		postvars = cgi.parse_qs(s.rfile.read(length), keep_blank_values=1)
+		postvars = urlparse.parse_qs(s.rfile.read(length).decode('utf-8', 'replace'), keep_blank_values=1)
 
 		logging.debug(postvars)
 

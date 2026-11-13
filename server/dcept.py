@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 # DCEPT
 # James Bettke
@@ -13,7 +13,7 @@ import socket
 
 import logging
 from logging import Logger
-import ConfigParser
+import configparser as ConfigParser
 from ConfigReader import config
 from ConfigReader import ConfigError
 
@@ -21,8 +21,9 @@ import pyshark
 import pyiface
 import alert
 
-import urllib
-import urllib2
+import urllib.parse
+import urllib.request
+import urllib.error
 import socket
 
 # Globals
@@ -34,9 +35,9 @@ class DceptError(Exception):
 
 def kerbsniff(interface, username, domain, realm):
 
-	logging.info("kerbsniff: Looking for %s\%s on %s" % (domain,username,interface))
+	logging.info("kerbsniff: Looking for %s\\%s on %s" % (domain,username,interface))
 	
-	filtered_cap = pyshark.LiveCapture(interface, bpf_filter='tcp port 88')
+	filtered_cap = pyshark.LiveCapture(interface, bpf_filter=config.capture_filter)
 	packet_iterator = filtered_cap.sniff_continuously
 	
 	# Loop infinitely over packets if in continuous mode
@@ -71,12 +72,12 @@ def notifyMaster(username, domain, encTimestamp):
 					'd' : domain,
 					't' : encTimestamp
 				}
-	data = urllib.urlencode(values)
+	data = urllib.parse.urlencode(values).encode('ascii')
 
 	try:
-		req = urllib2.Request(url, data)
-		response = urllib2.urlopen(req, timeout=30)
-	except (urllib2.URLError, socket.timeout) as e:
+		req = urllib.request.Request(url, data)
+		response = urllib.request.urlopen(req, timeout=30)
+	except (urllib.error.URLError, socket.timeout) as e:
 		message = "DCEPT slave Failed to communicate with master node '%s'" % (config.master_node)
 		logging.error(message)
 		alert.sendAlert(message)
@@ -90,7 +91,7 @@ def passwordHit(genServer, password):
 		message = "[RED ALERT] Honeytoken for %s\\%s '%s' was stolen from %s on %s" % \
 			(record[1],record[2], record[4], record[3], record[0].split(" ")[0] )
 		#print "\x1b[91m" + message + "\x1b[0m"
-		print "\x1b[91m" + "[RED ALERT]" + "\x1b[0m"
+		print("\x1b[91m" + "[RED ALERT]" + "\x1b[0m")
 		logging.critical(message)			
 		alert.sendAlert(message)
 
@@ -117,8 +118,13 @@ def kerb_handler(kp, domain,username):
 		except AttributeError:
 			pass
 
+		try:
+			kerbName = kp.cnamestring
+		except AttributeError:
+			pass
+
 		realm = kp.realm
-		logging.debug("kerb-as-req for domain user %s\%s" % (realm, kerbName))
+		logging.debug("kerb-as-req for domain user %s\\%s" % (realm, kerbName))
 
 		if kerbName.lower() == username.lower() and realm.lower() == config.realm.lower():
 
@@ -136,7 +142,7 @@ def kerb_handler(kp, domain,username):
 
 			logging.debug("PA-ENC-TIMESTAMP: %s", encTimestamp)
 		else:
-			logging.debug("Ignoring kerb-as-req for '%s\%s'" % (realm,kerbName))
+			logging.debug("Ignoring kerb-as-req for '%s\\%s'" % (realm,kerbName))
  
 
 	else:
@@ -156,11 +162,11 @@ def testInterface(interface):
 			return True
 	except IOError as e:
 		if e.errno == 19: # No such device
-			print "Bad interface. No such device '%s'" % (interface)
+			print("Bad interface. No such device '%s'" % (interface))
 	return False
 
 def main():
-	banner = """
+	banner = r"""
 	  _____   _____ ______ _____ _______ 
 	 |  __ \ / ____|  ____|  __ |__   __|
 	 | |  | | |    | |__  | |__) | | |   
@@ -169,7 +175,7 @@ def main():
 	 |_____/ \_____|______|_|      |_|
 """
  
-	print banner
+	print(banner)
 	
 	try:
 		# Read the configuration file
@@ -218,7 +224,7 @@ def main():
 	try:
 		kerbsniff(config.interface,config.honey_username, config.domain, config.realm)
 	except pyshark.capture.capture.TSharkCrashException:
-		
+		message = "TShark crashed"
 		logging.error(message)
 		raise DceptError(message)
 		
@@ -234,6 +240,6 @@ if __name__ == "__main__":
 
 		main()
 	except	(KeyboardInterrupt, DceptError):
-		print
+		print()
 		logging.info("Shutting down DCEPT...")
 

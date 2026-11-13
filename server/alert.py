@@ -1,12 +1,12 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 # James Bettke
 # Dell SecureWorks 2016
 
 from ConfigReader import config
 import smtplib
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 import logging
 from logging import *
@@ -35,7 +35,7 @@ def sendSyslog(host, message, severity=1, facility=4, port=514):
 	
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	data = '<%d>%s' % (severity + facility*8, message)
-	sock.sendto(data, (host, int(port)))
+	sock.sendto(data.encode('utf-8'), (host, int(port)))
 	sock.close()	
 	#rsyslog = logging.handlers.SysLogHandler(address=(host, port), facility=logging.handlers.SysLogHandler.LOG_USER, socktype=socket.SOCK_DGRAM)
 	#rsyslog.critical(message)

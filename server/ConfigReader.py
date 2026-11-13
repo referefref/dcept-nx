@@ -1,11 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 # James Bettke
 # Dell SecureWorks 2016
 
 import logging
-import ConfigParser
-import StringIO
+import configparser as ConfigParser
+import io as StringIO
 
 class ConfigError(Exception):
 	def __init__(self, message=""):
@@ -23,7 +23,7 @@ class ConfigReader():
 			cfg_str = '[root]\n' + open(path, 'r').read()
 			cfg_fp = StringIO.StringIO(cfg_str)
 			parser = ConfigParser.RawConfigParser(allow_no_value=False)
-			parser.readfp(cfg_fp)
+			parser.read_file(cfg_fp)
 
 			self.__dict__.update(parser.items("root"))
 
@@ -50,6 +50,7 @@ class ConfigReader():
 		self.syslog_host			= None
 		self.syslog_port			= 514
 		self.log_level 				= "INFO"
+		self.capture_filter			= "tcp port 88"
 
 	
 	def checkConfig(self):

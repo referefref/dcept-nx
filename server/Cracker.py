@@ -1,11 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 # DCEPT
 # James Bettke
 # Dell SecureWorks 2016
 
 import logging
-import Queue
+import queue as Queue
 import threading
 import tempfile
 import shutil
@@ -52,6 +52,8 @@ class Cracker:
 		wordlist = self.genServer.getPasswords()
 		if len(wordlist) == 0:
 			logging.info("Generation server hasn't issued any passwords. There is nothing to crack")
+			fh.close()
+			shutil.rmtree(tmpDir)
 			return
 
 		logging.info("Testing %d password(s)" % (len(wordlist)))
@@ -62,9 +64,9 @@ class Cracker:
 		if logging.getLogger().getEffectiveLevel() != logging.DEBUG:
 			redirectStr = "2>/dev/null"
 
-		result = subprocess.check_output("/opt/dcept/john --wordlist=%s --pot=%s --format=krb5pa-sha1 %s %s" % (wordPath, potPath, passPath, redirectStr), shell=True)
+		result = subprocess.check_output("/opt/dcept/john --wordlist=%s --pot=%s --format=krb5pa-sha1 %s %s" % (wordPath, potPath, passPath, redirectStr), shell=True, universal_newlines=True)
 
-		print "Cracking job completed"
+		print("Cracking job completed")
 		shutil.rmtree(tmpDir)
 
 		logging.debug(result)
@@ -72,10 +74,10 @@ class Cracker:
 	 
 		success = False
 		for line in lines:
-			if line.endswith("(?)"):
+			if line.rstrip().endswith("(?)"):  # current John pads the line with spaces
 				success = True
 				password = line.split(" ")
-				print "Cracked! Password: %s" % (password[0])
+				print("Cracked! Password: %s" % (password[0]))
 				callback(self.genServer, password[0])
 
 	def start(self, genServer):
@@ -84,9 +86,9 @@ class Cracker:
 
 	def _run(self):
 		while True:
-			if not self.passwordQueue.empty():
-				item = self.passwordQueue.get()
-				self.recoverPassword(item[0], item[1], item[2], item[3])
+			# Block until a job arrives (the original polled the queue in a tight loop)
+			item = self.passwordQueue.get()
+			self.recoverPassword(item[0], item[1], item[2], item[3])
 
 # Singleton
 cracker = Cracker()

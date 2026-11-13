@@ -1,3 +1,21 @@
+Adapted from https://github.com/secureworks/dcept by Joe Stewart and James Bettke (Dell SecureWorks).
+
+This is a Python 3 version of the DCEPT server components. The original runs only on Python 2 and its Docker build no longer works. The detection logic, the honeytoken generation server, its HTTP replies, the database and the alerts are unchanged. The changes are:
+
+- Python 3 syntax and standard library modules (`http.server`, `configparser`, `urllib`, `queue`, `email.mime`); HTTP replies and syslog messages are sent as bytes.
+- The Kerberos client name is also read from the `CNameString` field used by current TShark releases (3.0 and later); the older field names are still tried first.
+- Cracking results are recognised when current John the Ripper pads its output line with spaces.
+- The cracker thread waits on its queue instead of polling it in a tight loop, and its temporary directory is removed when there are no passwords to test.
+- An undefined variable in the TShark crash handler is defined.
+- New optional setting `capture_filter` (default `tcp port 88`, the original filter); `port 88` also captures Kerberos over UDP.
+- `server/Dockerfile` now builds on Debian 12 with Python 3, TShark 4.0 and a pinned John the Ripper jumbo commit (with colour output switched off so DCEPT can read it); `server/requirements.txt` pins the Python packages.
+
+The agent (`agent/ht-agent.cs`) is unchanged; it still needs Windows.
+
+The licence (GPL-3.0) and the original authors' notices are kept.
+
+---
+
 
 DCEPT
 =====
